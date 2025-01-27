@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sell Your Item</title>
+</head>
+<body>
+    <h1>Sell Your Item</h1>
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.name.label }}<br>
+            {{ form.name(class="form-control") }}
+            {% if form.name.errors %}
+                {% for error in form.name.errors %}
+                    <span style="color: red;">{{ error }}</span><br>
+                {% endif %}
+            {% endif %}
+        </p>
+        <p>
+            {{ form.description.label }}<br>
+            {{ form.description(class="form-control") }}
+        </p>
+        <p>
+            <h3>Categories:</h3>
+            {% for category in categories %}
+                <input type="checkbox" name="{{ category }}" id="{{ category }}">
+                <label for="{{ category }}">{{ category }}</label><br>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.image.label }}<br>
+            {{ form.image(class="form-control") }}
+        </p>
+        <p>
+            {{ form.submit(class="btn btn-primary") }}
+        </p>
+    </form>
+</body>
+</html>
