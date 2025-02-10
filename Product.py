@@ -1,28 +1,29 @@
 class Product:
     count_id = 0
 
-    def __init__(self, object_type, condition, collection, weight, quantity, ppu, description, image):
+    def __init__(self, name, object_type, condition, weight, quantity, ppu, description, image):
         Product.count_id += 1
         self.__product_id = Product.count_id
+        self.__name = name
         self.__object_type = object_type
         self.__condition = condition
-        self.__collection = collection
         self.__weight = weight
         self.__quantity = quantity
         self.__ppu = ppu
         self.__description = description
         self.__image = image
+
     def get_product_id(self):
         return self.__product_id
+
+    def get_name(self):
+        return self.__name
 
     def get_objectType(self):
         return self.__object_type
 
     def get_condition(self):
         return self.__condition
-
-    def get_collection(self):
-        return self.__collection
 
     def get_weight(self):
         return self.__weight
@@ -42,14 +43,14 @@ class Product:
     def set_product_id(self, product_id):
         self.__product_id = product_id
 
+    def set_name(self, name):
+        self.__name = name
+
     def set_ObjectType(self, object_type):
         self.__object_type = object_type
 
     def set_condition(self, condition):
         self.__condition = condition
-
-    def set_collection(self, collection):
-        self.__collection = collection
 
     def set_weight(self, weight):
         self.__weight = weight

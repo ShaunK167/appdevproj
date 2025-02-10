@@ -26,26 +26,47 @@ def sell_object():
             file.save(file_path)
 
             products_dict = {}
-            db = shelve.open('marketplace.db', 'c')
-
             try:
-                products_dict = db['Products']
-            except KeyError:
-                print("Error in retrieving Products from marketplace.db.")
+                db = shelve.open('marketplace.db', 'c')
 
-            product = Product.Product(
-                add_product_form.objectType.data,
-                add_product_form.condition.data,
-                add_product_form.collection.data,
-                add_product_form.weight.data,
-                add_product_form.quantity.data,
-                add_product_form.ppu.data,
-                add_product_form.description.data,
-                filename
-            )
-            products_dict[product.get_product_id()] = product
-            db['Products'] = products_dict
-            db.close()
+                try:
+                    products_dict = db['Products']
+                except KeyError:
+                    products_dict = {}
+
+                product = Product.Product(
+                    add_product_form.name.data,
+                    add_product_form.objectType.data,
+                    add_product_form.condition.data,
+                    add_product_form.weight.data,
+                    add_product_form.quantity.data,
+                    add_product_form.ppu.data,
+                    add_product_form.description.data,
+                    filename
+                )
+                products_dict[product.get_product_id()] = product
+                db['Products'] = products_dict
+                db.close()
+            except (EOFError, FileNotFoundError):
+                try:
+                    os.remove('marketplace.db')
+                except FileNotFoundError:
+                    pass
+                db = shelve.open('marketplace.db', 'c')
+                products_dict = {}
+                product = Product.Product(
+                    add_product_form.name.data,
+                    add_product_form.objectType.data,
+                    add_product_form.condition.data,
+                    add_product_form.weight.data,
+                    add_product_form.quantity.data,
+                    add_product_form.ppu.data,
+                    add_product_form.description.data,
+                    filename
+                )
+                products_dict[product.get_product_id()] = product
+                db['Products'] = products_dict
+                db.close()
 
             return redirect(url_for('retrieve_products'))
         else:
@@ -57,9 +78,15 @@ def sell_object():
 @app.route('/retrieveProducts')
 def retrieve_products():
     products_dict = {}
-    db = shelve.open('marketplace.db', 'r')
-    products_dict = db['Products']
-    db.close()
+    try:
+        db = shelve.open('marketplace.db', 'r')
+        try:
+            products_dict = db['Products']
+        except KeyError:
+            products_dict = {}
+        db.close()
+    except (EOFError, FileNotFoundError):
+        products_dict = {}
 
     products_list = []
     for key in products_dict:
@@ -74,40 +101,47 @@ def update_product(id):
     update_product_form = AddProductForm()
     if request.method == 'POST' and update_product_form.validate_on_submit():
         products_dict = {}
-        db = shelve.open('marketplace.db', 'w')
-        products_dict = db['Products']
+        try:
+            db = shelve.open('marketplace.db', 'w')
+            products_dict = db['Products']
 
-        product = products_dict.get(id)
-        product.set_ObjectType(update_product_form.objectType.data)
-        product.set_condition(update_product_form.condition.data)
-        product.set_collection(update_product_form.collection.data)
-        product.set_weight(update_product_form.weight.data)
-        product.set_quantity(update_product_form.quantity.data)
-        product.set_ppu(update_product_form.ppu.data)
-        product.set_description(update_product_form.description.data)
+            product = products_dict.get(id)
+            product.set_name(update_product_form.name.data)
+            product.set_ObjectType(update_product_form.objectType.data)
+            product.set_condition(update_product_form.condition.data)
+            product.set_weight(update_product_form.weight.data)
+            product.set_quantity(update_product_form.quantity.data)
+            product.set_ppu(update_product_form.ppu.data)
+            product.set_description(update_product_form.description.data)
 
-        # Handle image update
-        file = update_product_form.image.data
-        if file:
-            filename = secure_filename(file.filename)
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(file_path)
-            product.set_image(filename)
+            file = update_product_form.image.data
+            if file:
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+                product.set_image(filename)
 
-        db['Products'] = products_dict
-        db.close()
+            db['Products'] = products_dict
+            db.close()
+        except (EOFError, FileNotFoundError):
+            flash('An error occurred while updating the product. Please try again.')
+            return redirect(url_for('update_product', id=id))
 
         return redirect(url_for('retrieve_products'))
     else:
         products_dict = {}
-        db = shelve.open('marketplace.db', 'r')
-        products_dict = db['Products']
-        db.close()
+        try:
+            db = shelve.open('marketplace.db', 'r')
+            products_dict = db['Products']
+            db.close()
+        except (EOFError, FileNotFoundError):
+            flash('An error occurred while retrieving the product details. Please try again.')
+            return redirect(url_for('retrieve_products'))
 
         product = products_dict.get(id)
-        update_product_form.objectType.data = product.get_ObjectType()
+        update_product_form.name.data = product.get_name()
+        update_product_form.objectType.data = product.get_objectType()
         update_product_form.condition.data = product.get_condition()
-        update_product_form.collection.data = product.get_collection()
         update_product_form.weight.data = product.get_weight()
         update_product_form.quantity.data = product.get_quantity()
         update_product_form.ppu.data = product.get_ppu()
@@ -119,13 +153,16 @@ def update_product(id):
 @app.route('/deleteProduct/<int:id>', methods=['POST'])
 def delete_product(id):
     products_dict = {}
-    db = shelve.open('marketplace.db', 'w')
-    products_dict = db['Products']
+    try:
+        db = shelve.open('marketplace.db', 'w')
+        products_dict = db['Products']
 
-    products_dict.pop(id)
+        products_dict.pop(id)
 
-    db['Products'] = products_dict
-    db.close()
+        db['Products'] = products_dict
+        db.close()
+    except (EOFError, FileNotFoundError):
+        flash('An error occurred while deleting the product. Please try again.')
 
     return redirect(url_for('retrieve_products'))
 
