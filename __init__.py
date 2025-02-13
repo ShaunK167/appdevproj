@@ -3,6 +3,8 @@ from Forms import AddProductForm
 from werkzeug.utils import secure_filename
 import os
 import shelve, Product
+import requests
+from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
@@ -165,6 +167,35 @@ def delete_product(id):
         flash('An error occurred while deleting the product. Please try again.')
 
     return redirect(url_for('retrieve_products'))
+
+
+@app.route('/webscraper')
+def scrape():
+    # URL to scrape
+    url = "https://www.ebay.com/deals?_trkparms=parentrq%3Af8afcd011940a60c4e3c6515ffffc4f0%7Cpageci%3A66c433ae-e904-11ef-8703-46859dd65244%7Ciid%3A1%7Cvlpname%3Avlp_homepage"
+
+    # Send a GET request to the URL
+    response = requests.get(url)
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        # Parse the HTML content
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        # Find all div elements with class "dne-itemtile-detail"
+        jfy_divs = soup.find_all('div', class_='dne-itemtile-detail')
+
+        # Check if any divs were found
+        if not jfy_divs:
+            return render_template('webscraper.html', content=None)
+
+        # Extracting text content from the divs
+        content = [div.get_text(strip=True) for div in jfy_divs]
+
+        # Render the HTML template and pass the content
+        return render_template('webscraper.html', content=content)
+    else:
+        return f"Failed to retrieve the webpage. Status code: {response.status_code}"
 
 
 if __name__ == '__main__':
